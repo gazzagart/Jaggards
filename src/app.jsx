@@ -8,6 +8,7 @@ import ButtonAppBar from "./buttonappbar.jsx";
 class App extends React.Component {
   componentDidMount() {
     this.props.history.push("/main/");
+    window.__MUI_USE_NEXT_TYPOGRAPHY_VARIANTS__ = true;
   }
 
   render() {

@@ -2,10 +2,10 @@ import React from 'react';
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
-var remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
-var app = remote.app;
-var dialog = remote.dialog; // Load the dialogs component of the OS
-var fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
+const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
+const app = remote.app;
+const dialog = remote.dialog; // Load the dialogs component of the OS
+const fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
 
 export default class Voip extends React.Component {
 
@@ -14,7 +14,6 @@ export default class Voip extends React.Component {
     console.log(DATAPATH);
     fs.readFile(DATAPATH, 'utf-8', (err, data ) => {
       if(err) { // File does not exist yet.
-        alert("There has been an error trying to read the file.");
         var content = {
             summary: {},
             headingRow: ["ID","RefNum","Extension Number","Call Date","Call Duration","Number Called","LCD","Call Direction"]
@@ -77,7 +76,7 @@ export default class Voip extends React.Component {
             <Grid container justify="center" spacing={16}>
                 <Grid item>
                   <Button variant="contained" color="primary">
-                    <Link to='/main/'>Main Page</Link>
+                    <Link style={{ textDecoration: 'none' }} to='/main/'>Main Page</Link>
                   </Button>
                 </Grid>
                 <Grid item>
