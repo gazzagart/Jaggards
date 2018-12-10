@@ -2,6 +2,7 @@ import React from 'react';
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
+import AlertDialog from './alertdialog.jsx';
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
 const dialog = remote.dialog; // Load the dialogs component of the OS
@@ -9,11 +10,22 @@ const fs = require('fs'); // Load the File System to execute our common tasks (C
 
 export default class Voip extends React.Component {
 
+  constructor(props) {
+    super(props);
+    this.firstLoad = this.firstLoad.bind(this);
+    this.state = {
+      dialogOpen: false,
+      dialogTitle: "Welcome To Viop Dashboard",
+      dialogMessage: 'To start, click on load data to load in your .csv file. Whenever you need to load more data, just click load data again and load a new file.',
+    };
+  }
+
   componentDidMount() {
     const DATAPATH =  app.getAppPath() + "\\allSaveData.json";
     console.log(DATAPATH);
     fs.readFile(DATAPATH, 'utf-8', (err, data ) => {
       if(err) { // File does not exist yet.
+        this.setState({ dialogOpen: true });
         var content = {
             summary: {},
             headingRow: ["ID","RefNum","Extension Number","Call Date","Call Duration","Number Called","LCD","Call Direction"]
@@ -46,7 +58,10 @@ export default class Voip extends React.Component {
         var worker = new Worker("worker.js");
         worker.addEventListener('message', function(e) {
           console.log('Message from Worker: ');
-          console.log(e.data[0][0]);
+          console.log(e.data);
+          if(localStorage.getItem("exNumbers") !== null) {
+            exNumbers = localStorage.getItem("exNumbers");
+          }
         });
         worker.postMessage(data);
     } else {
@@ -65,7 +80,16 @@ export default class Voip extends React.Component {
     });
   }
 
+  firstLoad (dataFromChild) {
+    this.setState({
+      dialogOpen: dataFromChild
+    });
+  }
+
   render() {
+    const open = this.state.dialogOpen;
+    const title = this.state.dialogTitle;
+    const message = this.state.dialogMessage;
     return (
     <div style={{ marginTop: 30 }}>
       <Grid container spacing={16}>
@@ -80,6 +104,7 @@ export default class Voip extends React.Component {
                   </Button>
                 </Grid>
                 <Grid item>
+                <AlertDialog message={message} title={title} open={open} callbackFromParent={this.firstLoad}/>
                 <Button variant="contained" className="w3-green" onClick={() => this.getData()}>
                   Load Data
                 </Button>
