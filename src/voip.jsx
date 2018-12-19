@@ -59,11 +59,11 @@ export default class Voip extends React.Component {
         console.error(err);
         return;
       }
-      if (typeof(Worker) !== "undefined") {
-        var worker = new Worker("worker.js");
-        worker.addEventListener('message', function(e) {
-          // console.log('Message from Worker: ');
-          // console.log(e.data);
+  if (typeof(Worker) !== "undefined") {
+    var worker = new Worker(app.getAppPath() + "\\worker.js");
+    worker.addEventListener('message', function(e) {
+      // console.log('Message from Worker: ');
+      // console.log(e.data);
 
   /**
    * Function to return if we have already added Ex number for this file.
@@ -224,45 +224,64 @@ export default class Voip extends React.Component {
    * @param {Array} dataToSave - this is an array of all the data to write to files
    */
   function saveToFile (dataToSave) {
-    var DATAPATHP =  app.getAppPath() + "\\dataForVoip\\";
-    // The length of this file will be the number of files to create
-    var noOfFiles = dataToSave.length;
-    for (var a = 0; a < noOfFiles; a++) {
-      let nameOfFile = DATAPATHP + dataToSave[a].exNumber + '.json';
-      console.log('dataToSave[a]', dataToSave[a]);
-      fs.writeFile(nameOfFile, JSON.stringify(dataToSave[a]), (err) => {
-        if(err){
-          alert("An error ocurred creating the file "+ err.message);
-          return;
-        }
-          console.log("The file ",nameOfFile," has been succesfully saved");
+    return new Promise((reject, resolve) => {
+      var DATAPATHP =  app.getAppPath() + "\\dataForVoip\\";
+      var promises = [];
+      // The length of this file will be the number of files to create
+      var noOfFiles = dataToSave.length;
+      for (var a = 0; a < noOfFiles; a++) {
+        let nameOfFile = DATAPATHP + dataToSave[a].exNumber + '.json';
+        console.log('dataToSave[a]', dataToSave[a]);
+        promises.push(new Promise((resolve, reject) => {
+          fs.writeFile(nameOfFile, JSON.stringify(dataToSave[a]), (err) => {
+            if(err){
+              reject(alert("An error ocurred creating the file "+ err.message));
+            }
+              resolve(console.log("The file ",nameOfFile," has been succesfully saved"));
+          });
+        }));
+      }
+      Promise.all(promises).then(() => {
+        resolve(console.log("All files were saved properly."));
+      }).catch((err) => {
+        reject(console.log(err));
       });
-    }
-    console.log("All files were saved properly.");
+    });
   }
 
   /**
    * Function to return all the data saved for the exNumbers.
    */
   function getDataFromFiles () {
-    var DATAPATHP =  app.getAppPath() + "\\dataForVoip\\";
-    console.log(DATAPATHP);
-    var allDataSaved = [];
-    fs.readdir(DATAPATHP, (err,dir) => {
-      if(err) {
-        console.error("Error: ", err);
-        return;
-      }
-      var length = dir.length;
-      for(var a = 0; a < length; a++) {
-        var filePath = DATAPATHP + dir[a];
-        console.log(filePath);
-        fs.readFile(filePath, 'utf-8', (err, data ) => {
-          allDataSaved.push(JSON.parse(data));
+    return new Promise((resolve, reject) => {
+      var DATAPATHP =  app.getAppPath() + "\\dataForVoip\\";
+      var allDataSaved = [];
+      var promises = [];
+      fs.readdir(DATAPATHP, (err,dir) => {
+        if(err) {
+          console.error("Error: ", err);
+          return;
+        }
+        var length = dir.length;
+        for(var a = 0; a < length; a++) {
+          var filePath = DATAPATHP + dir[a];
+          promises.push(new Promise(function(resolve, reject) {
+            fs.readFile(filePath, 'utf-8', (err, data ) => {
+              if(err) {
+                reject("There was an error reading: ", filePath, " file.");
+              }
+              resolve(allDataSaved.push(JSON.parse(data)));
+            });
+          }));
+          console.log(filePath);
+        }
+        Promise.all(promises).then(() => {
+        resolve(allDataSaved);
+        }).catch((err) => {
+          reject(console.error(err));
         });
-      }
+      });
     });
-    return allDataSaved;
   }
 
   /**
@@ -393,15 +412,16 @@ export default class Voip extends React.Component {
     return dataToPassBack;
   }
 
+  worker.terminate();
   var dataForFile = toPost(e);
   console.log(dataForFile);
   // saveToFile(dataForFile);
-  console.log(getDataFromFiles());
+  getDataFromFiles().then((e) => {console.log(e);});
 
-          if(localStorage.getItem("exNumbers") !== null) {
-            exNumbers = localStorage.getItem("exNumbers");
-          }
-        });
+    if(localStorage.getItem("exNumbers") !== null) {
+      exNumbers = localStorage.getItem("exNumbers");
+    }
+  });
         worker.postMessage(data);
     } else {
         console.log("There is no worker support :(");
