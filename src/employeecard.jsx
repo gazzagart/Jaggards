@@ -7,7 +7,7 @@ import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 
-const styles = {
+const styles = theme => ({
   card: {
     minWidth: 275,
   },
@@ -17,34 +17,32 @@ const styles = {
   pos: {
     marginBottom: 12,
   },
-};
+});
 
 class EmployeeCard extends React.Component {
 
     constructor(props) {
         super(props);
+        this.componentDidMount = this.componentDidMount.bind(this);
+        this.state = {
+          widthToPass: 275,
+        };
       }
 
   render () {
-    const { classes } = props;
-    let width = window.screen.availWidth;
-    let widthToPass = '';
-    if (width > 720) {
-        widthToPass = '60%';
-      } else {
-        widthToPass = '90%';
-      }
+    const { classes } = this.props;
     return (
-        <Card className={classes.card} style={{width:widthToPass}}>
+        <Card  style={{minWidth:275, maxWidth:720, margin:16}}>
           <CardContent>
             <Typography className={classes.title} color="textSecondary" gutterBottom>
               Extension Number: {this.props.exNumber}
             </Typography>
             <Typography variant="h5" component="h2">
-              {this.props.calls}
+              Number of Calls: {this.props.calls}
             </Typography>
+            <br></br>
             <Typography variant="h5" component="h2">
-              {this.props.time}
+              Time calling: {this.props.time}
             </Typography>
           </CardContent>
           <CardActions>
@@ -55,7 +53,7 @@ class EmployeeCard extends React.Component {
   }
 }
 
-SimpleCard.propTypes = {
+EmployeeCard.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 

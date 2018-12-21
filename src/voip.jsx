@@ -4,6 +4,7 @@ import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
 import AlertDialog from './alertdialog.jsx';
 import CustomizedSnackbars from './customizedsnackbars.jsx';
+import EmployeeCard from './employeecard.jsx';
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
 const dialog = remote.dialog; // Load the dialogs component of the OS
@@ -16,6 +17,7 @@ export default class Voip extends React.Component {
     // this.loaderEle = React.createRef();
     this.firstLoad = this.firstLoad.bind(this);
     this.myCallback = this.myCallback.bind(this);
+    this.getEmployeeCards = this.getEmployeeCards.bind(this);
     this.state = {
       dialogOpen: false,
       dialogTitle: "Welcome To Viop Dashboard",
@@ -24,6 +26,7 @@ export default class Voip extends React.Component {
       openSnack: false,
       typeSnack: 'info',
       messageSnack: 'Well hello there',
+      employeeCards: []
     };
   }
 
@@ -32,6 +35,7 @@ export default class Voip extends React.Component {
     if (fs.existsSync(DATAPATH)) {
         this.getDataFromFiles().then((data) => {
           this.setState({stateOfVoip: data});
+          this.getEmployeeCards();
         });
     } else {
       fs.mkdir(DATAPATH, (err) => {
@@ -53,6 +57,28 @@ export default class Voip extends React.Component {
     this.setState({
       openSnack: dataFromChild
     });
+  }
+
+  getEmployeeCards () {
+    var employeeCardsData = [];
+    var length = this.state.stateOfVoip.length;
+    var min = "", seconds = "";
+    for (var a = 0; a < length; a++) {
+      if(this.state.stateOfVoip[a].allTime.time.min < 10) {min = "0" + this.state.stateOfVoip[a].allTime.time.min;}
+      else {min = this.state.stateOfVoip[a].allTime.time.min;}
+      if(this.state.stateOfVoip[a].allTime.time.seconds < 10) {seconds = "0" + this.state.stateOfVoip[a].allTime.time.seconds;}
+      else {seconds = this.state.stateOfVoip[a].allTime.time.seconds;}
+      employeeCardsData.push({
+        key: a,
+        new: this.state.stateOfVoip[a].new,
+        exNumber: this.state.stateOfVoip[a].exNumber,
+        calls: this.state.stateOfVoip[a].allTime.calls,
+        hours: this.state.stateOfVoip[a].allTime.time.hours,
+        min: min,
+        seconds: seconds
+      });
+    }
+    this.setState({employeeCards: employeeCardsData});
   }
 
    /**
@@ -176,6 +202,7 @@ export default class Voip extends React.Component {
                 to:returnMillisecondsOfDate(toDateToAdd),
                 new: true,
             });
+            // console.log("rowon",rowCurrentlyOn);
             dataToPassBack = pushDataToArray(dataToPassBack, rowCurrentlyOn);
             return dataToPassBack;
           }
@@ -183,16 +210,29 @@ export default class Voip extends React.Component {
         /**
          * Function to return the last date.
          * @param {Array} arrayOfData - Array of all our data to check.
-         * @param {Number} lastRow - last row of our data.
+         * @param {Number} noOfRows - Number of rows in file.
          */
-        function findLastDate (arrayOfData, lastRow) {
-          for(var a = (lastRow-1); a > -1; a--) {
-            if(arrayOfData[a].length > 1) {
-              if(arrayOfData[a][3] !== undefined) {
-                return arrayOfData[a][3];
+        function findFirstAndLastDate (arrayOfData, noOfRows) {
+          var firstDate;
+          for(var b = (noOfRows-1); b > -1; b--) {
+            if(arrayOfData[b].length > 1) {
+              if(arrayOfData[b][3] !== undefined) {
+                firstDate = returnMillisecondsOfDate(arrayOfData[b][3]);
+                b = -1;
               }
             }
           }
+          var lastDate = firstDate;
+          for(var a = 0; a < noOfRows; a++) {
+            if(arrayOfData[a].length > 1) {
+              if(arrayOfData[a][3] !== undefined) {
+                let tempDate = returnMillisecondsOfDate(arrayOfData[a][3]);
+                if(tempDate < firstDate) firstDate = tempDate;
+                if(tempDate > lastDate) lastDate = tempDate;
+              }
+            }
+          }
+          return {firstDate: firstDate, lastDate: lastDate};
         }
         /**
          * Function to check if the year changes in this file.
@@ -260,13 +300,12 @@ export default class Voip extends React.Component {
             var noOfFiles = dataToSave.length;
             for (var a = 0; a < noOfFiles; a++) {
               let nameOfFile = DATAPATHP + dataToSave[a].exNumber + '.json';
-              console.log('dataToSave[a]', dataToSave[a]);
               promises.push(new Promise((resolve, reject) => {
                 fs.writeFile(nameOfFile, JSON.stringify(dataToSave[a]), (err) => {
                   if(err){
                     reject(alert("An error ocurred creating the file "+ err.message));
                   }
-                    resolve(console.log("The file ",nameOfFile," has been succesfully saved"));
+                    resolve();
                 });
               }));
             }
@@ -286,7 +325,10 @@ export default class Voip extends React.Component {
         function changeTimgapsNew (allData, day) {
           var length = allData.length;
           for (var a = 0; a < length; a++) {
-            allData[a].data.timeGapsDays[day].new = false;
+            var lengthOfGaps = allData[a].data.timeGapsDays[day].length;
+            for(var b = 0; b < lengthOfGaps; b++) {
+              allData[a].data.timeGapsDays[day][b].new = false;
+            }
           }
           return allData;
         }
@@ -303,8 +345,9 @@ export default class Voip extends React.Component {
           // e.data is what we will be working with. This is an array and each index of the array represents a row.
           const columns = 8;
           var rows = e.data.length;
-          var lastDate = e.data[1][3];
-          var firstDate = findLastDate(e.data, rows);
+          var firstAndLastDate = findFirstAndLastDate(e.data,rows);
+          var lastDate = firstAndLastDate.lastDate;
+          var firstDate = firstAndLastDate.firstDate;
           var year = new Date(e.data[1][3]);
           var doesTheYearChange = doesTheYearChangeFunction(firstDate, lastDate);
           // These two variables would normally equal, but maybe they dont.
@@ -346,7 +389,8 @@ export default class Voip extends React.Component {
                                     time: {hours: 0, min: 0, seconds: 0},
                                     calls:0,
                                     outgoingNum:0,
-                                    incomingNum:0
+                                    incomingNum:0,
+                                    unknownNum: 0
                                 }
                             });
                             exNumbers.push(e.data[a][b]);
@@ -417,6 +461,7 @@ export default class Voip extends React.Component {
           worker.terminate();
           var dataForFile = toPost(e, this.state.stateOfVoip);
           console.log("this.state.stateOfVoip",this.state.stateOfVoip);
+          this.getEmployeeCards();
           console.log("dataForFile",dataForFile);
           saveToFile(dataForFile).then((e) => {
               console.log(e);
@@ -455,6 +500,9 @@ export default class Voip extends React.Component {
     const openSnack = this.state.openSnack;
     const typeSnack = this.state.typeSnack;
     const messageSnack = this.state.messageSnack;
+    const employeeCards = this.state.employeeCards.map((result) => {
+      return <Grid item key={result.key}><EmployeeCard time={result.hours + ":" + result.min + ":" + result.seconds} calls={result.calls} exNumber={result.exNumber}/></Grid>
+    });
     return (
     <div style={{ marginTop: 30 }}>
       <Grid container spacing={16}>
@@ -475,6 +523,9 @@ export default class Voip extends React.Component {
                 </Button>
                 </Grid>
             </Grid>
+        </Grid>
+        <Grid container justify="center" spacing={16}>
+          <Grid item>{employeeCards}</Grid>
         </Grid>
       </Grid>
       <CustomizedSnackbars type={typeSnack} message={messageSnack} open={openSnack} callbackFromParent={this.myCallback}/>
