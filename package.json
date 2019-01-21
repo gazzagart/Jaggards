@@ -1,8 +1,8 @@
 {
-  "name": "voip",
-  "productName": "voip",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "name": "jaggards",
+  "productName": "Jaggards",
+  "version": "0.0.1",
+  "description": "The Jaggards Desktop app to handle .csv and Excel data",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -32,17 +32,21 @@
         "packageManager": "npm"
       },
       "electronWinstallerConfig": {
-        "name": "voip"
+        "name": "Jaggards",
+        "authors": "Maybery Dev Team",
+        "title": "Jaggards Desktop Application",
+        "loadingGif": "./src/loading.gif",
+        "setupIcon": "./src/JaggardsIco.ico"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
       "github_repository": {
-        "owner": "",
+        "owner": "Gareth Maybery",
         "name": ""
       },
       "windowsStoreConfig": {
         "packageName": "",
-        "name": "voip"
+        "name": "Jaggards"
       }
     }
   },
@@ -65,6 +69,7 @@
     "babel-preset-react": "^6.24.1",
     "electron-forge": "^5.2.2",
     "electron-prebuilt-compile": "3.0.6",
+    "electron-winstaller": "^2.7.0",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^15.1.0",
     "eslint-plugin-import": "^2.14.0",

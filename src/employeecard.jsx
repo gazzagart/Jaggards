@@ -23,7 +23,6 @@ class EmployeeCard extends React.Component {
 
     constructor(props) {
         super(props);
-        this.componentDidMount = this.componentDidMount.bind(this);
         this.state = {
           widthToPass: 275,
         };
