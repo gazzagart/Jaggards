@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import AlertDialog from './alertdialog.jsx';
 import CustomizedSnackbars from './customizedsnackbars.jsx';
 import EmployeeCard from './employeecard.jsx';
+import CircularProgress from '@material-ui/core/CircularProgress';
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
 const dialog = remote.dialog; // Load the dialogs component of the OS
@@ -26,7 +27,8 @@ export default class Voip extends React.Component {
       openSnack: false,
       typeSnack: 'info',
       messageSnack: 'Well hello there',
-      employeeCards: []
+      employeeCards: [],
+      loading: false
     };
   }
 
@@ -86,6 +88,7 @@ export default class Voip extends React.Component {
    */
   getDataFromFiles () {
       return new Promise((resolve, reject) => {
+        this.setState({loading: true});
         var DATAPATHP =  app.getAppPath() + "\\dataForVoip\\";
         var allDataSaved = [];
         var promises = [];
@@ -107,6 +110,7 @@ export default class Voip extends React.Component {
             }));
           }
           Promise.all(promises).then(() => {
+            this.setState({loading: false});
             resolve(allDataSaved);
           }).catch((err) => {
             reject(console.error(err));
@@ -116,6 +120,7 @@ export default class Voip extends React.Component {
     }
 
   readFile (filePath) {
+    this.setState({loading: true});
     fs.readFile(filePath, 'utf-8', (err, data ) => {
       if(err) {
         alert("There has been an error trying to read the file.");
@@ -234,20 +239,6 @@ export default class Voip extends React.Component {
           }
           return {firstDate: firstDate, lastDate: lastDate};
         }
-        /**
-         * Function to check if the year changes in this file.
-         * @param {String} firstDate - String found at the bottom of our file representing the date.
-         * @param {String} lastDate - String found at the top of our file representing the date.
-         */
-        function doesTheYearChangeFunction (firstDate, lastDate) {
-          let firstDateTemp = new Date(firstDate);
-          let lastDateTemp = new Date(lastDate);
-          if (firstDateTemp.getFullYear() !== lastDateTemp.getFullYear()) {
-            return false;
-          } else {
-            return true;
-          }
-        }
 
         /**
          * Function to add data to exNumber
@@ -349,7 +340,6 @@ export default class Voip extends React.Component {
           var lastDate = firstAndLastDate.lastDate;
           var firstDate = firstAndLastDate.firstDate;
           var year = new Date(e.data[1][3]);
-          var doesTheYearChange = doesTheYearChangeFunction(firstDate, lastDate);
           // These two variables would normally equal, but maybe they dont.
           var lastDateDay = returnDayStartAndEndForGaps(lastDate);
           var firstDateDay = returnDayStartAndEndForGaps(firstDate);
@@ -454,18 +444,22 @@ export default class Voip extends React.Component {
           return dataToPassBack;
         }
         /*END OF FUNCTIONS*/
-        var worker = new Worker(app.getAppPath() + "\\worker.js");
-        worker.addEventListener('message', (e) => {
+        /* TODO: We need to add time to each person for each day, week and month.
+         * 
+        */
+        var worker = new Worker(app.getAppPath() + "\\src\\worker.js");
+        worker.addEventListener('message',  (e) => {
           // console.log('Message from Worker: ');
           // console.log(e.data);
           worker.terminate();
-          var dataForFile = toPost(e, this.state.stateOfVoip);
+          var dataForFile =  toPost(e, this.state.stateOfVoip);
           console.log("this.state.stateOfVoip",this.state.stateOfVoip);
           this.getEmployeeCards();
           console.log("dataForFile",dataForFile);
           saveToFile(dataForFile).then((e) => {
               console.log(e);
               this.openSnackBarSuccesLoadingNewFile();
+              this.setState({loading: false});
             }).catch((err) => {
               console.log(err);
             });
@@ -500,13 +494,23 @@ export default class Voip extends React.Component {
     const openSnack = this.state.openSnack;
     const typeSnack = this.state.typeSnack;
     const messageSnack = this.state.messageSnack;
+    let loadingLoader = {
+      display: 'none'
+    };
+    let loadingRest = {
+      display: 'block'
+    };
+    if (this.state.loading) {
+      loadingLoader.display = "block";
+      loadingRest.display = "none";
+    }
     const employeeCards = this.state.employeeCards.map((result) => {
       return <Grid item key={result.key}><EmployeeCard time={result.hours + ":" + result.min + ":" + result.seconds} calls={result.calls} exNumber={result.exNumber}/></Grid>
     });
     return (
-    <div style={{ marginTop: 30 }}>
+    <div style={{ marginTop: 30}}>
       <Grid container spacing={16}>
-        <Grid item xs={12}>
+        <Grid item xs={12} style={loadingRest}>
             <Grid container justify="center" spacing={16}>
                 <h2>VoIP Dashboard</h2>
             </Grid>
@@ -528,6 +532,22 @@ export default class Voip extends React.Component {
           <Grid item>{employeeCards}</Grid>
         </Grid>
       </Grid>
+      {/* Loader to show when reading new file and adding data */}
+      <div style={loadingLoader}>
+        <Grid container spacing={16}>
+          <Grid item xs={12}>
+            <Grid container justify="center" spacing={16}>
+              <Grid item>
+                <CircularProgress/>
+              </Grid>
+              <Grid item>
+                <p>Loading</p>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </div>
+      {/* End of loader */}
       <CustomizedSnackbars type={typeSnack} message={messageSnack} open={openSnack} callbackFromParent={this.myCallback}/>
     </div>
     );

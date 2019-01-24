@@ -36,7 +36,10 @@
         "authors": "Maybery Dev Team",
         "title": "Jaggards Desktop Application",
         "loadingGif": "./src/loading.gif",
-        "setupIcon": "./src/JaggardsIco.ico"
+        "setupIcon": "./src/JaggardsIco.ico",
+        "iconUrl": "https://raw.githubusercontent.com/gazzagart/Jaggards/master/src/JaggardsIco.ico",
+        "noMsi": true,
+        "setupExe": "Jaggards Setup.exe"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},

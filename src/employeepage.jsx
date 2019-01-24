@@ -3,7 +3,7 @@ import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
 
-export default class Excel extends React.Component {
+export default class EmployeePage extends React.Component {
   render() {
     return (
     <div style={{ marginTop: 30 }}>
