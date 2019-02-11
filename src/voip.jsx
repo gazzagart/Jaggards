@@ -6,10 +6,12 @@ import AlertDialog from './alertdialog.jsx';
 import CustomizedSnackbars from './customizedsnackbars.jsx';
 import EmployeeCard from './employeecard.jsx';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from 'constants';
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
 const dialog = remote.dialog; // Load the dialogs component of the OS
 const fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
+var tempPoop = false;
 
 export default class Voip extends React.Component {
 
@@ -192,7 +194,7 @@ export default class Voip extends React.Component {
          * @param {Number} year - The year of the data passed.
          * @param {Object} rowCurrentlyOn - This is the row we are on to pass to another funtion if our checks are okay.
          */
-        function checkAndUpdateDataIfNeed (dataToPassBack, arrayOfGapObjects, millisecondsToCheck, indexToChange, dayForGap, fromDateToAdd, toDateToAdd, rowCurrentlyOn) {
+        function checkAndUpdateDataIfNeed (dataToPassBack, arrayOfGapObjects, millisecondsToCheck, indexToChange, dayForGap, fromDateToAdd, toDateToAdd, year, rowCurrentlyOn) {
           if(arrayOfGapObjects !== undefined ){
             var length = arrayOfGapObjects.length;
             for(var a = 0; a < length; a++) {
@@ -204,7 +206,7 @@ export default class Voip extends React.Component {
                 return dataToPassBack;
               }
             }
-            dataToPassBack[indexToChange].data.timeGapsDays[dayForGap].push({
+            dataToPassBack[indexToChange].data[year].timeGapsDays[dayForGap].push({
                 from:returnMillisecondsOfDate(fromDateToAdd),
                 to:returnMillisecondsOfDate(toDateToAdd),
                 new: true,
@@ -315,15 +317,49 @@ export default class Voip extends React.Component {
          * @param {Array} allData - The data.
          * @param {Number} day - the day that we want to change in the time gap.
          */
-        function changeTimgapsNew (allData, day) {
+        function changeTimgapsNew (allData, day, year) {
           var length = allData.length;
+          console.log(year);
+          console.log(day);
           for (var a = 0; a < length; a++) {
-            var lengthOfGaps = allData[a].data.timeGapsDays[day].length;
-            for(var b = 0; b < lengthOfGaps; b++) {
-              allData[a].data.timeGapsDays[day][b].new = false;
+            var numYears = allData[a].data.length;
+            for (var b = 0; b < numYears; b++) {
+              var lengthOfGaps = allData[a].data[b].timeGapsDays[day].length;
+              for(var c = 0; c < lengthOfGaps; c++) {
+                allData[a].data[b].timeGapsDays[day][c].new = false;
+              }
             }
           }
           return allData;
+        }
+
+        /**
+         * Function to return the index of the year for the data.
+         * @param {Array} allData - The data.
+         * @param {Number} year - the year that we want look for.
+         */
+        function getIndexOfYear (allData, year) {
+          var length =  allData.length;
+          for (var a = 0; a < length; a++) {
+            if (allData[a].year == year) {
+              return a;
+            }
+          }
+        }
+
+        /**
+         * Function to year exists for data.
+         * @param {Array} allData - The data.
+         * @param {Number} year - the year that we want look for.
+         */
+        function doesYearExist (allData, year) {
+          var length =  allData.length;
+          for (var a = 0; a < length; a++) {
+            if (allData[a].year == year) {
+              return true;
+            }
+          }
+          return false;
         }
 
         function toPost (e, dataFromState) {
@@ -371,13 +407,13 @@ export default class Voip extends React.Component {
                                 new: true,
                                 exNumber: parseInt(e.data[a][b]),
                                 name: "",
-                                data:{
+                                data:[{
                                   year:year,
                                   timeGapsDays: new Array(366),
                                   days: new Array(366),
                                   week: new Array(52),// weekNum:1-52
                                   month: new Array(12),// monthNum: 1-12
-                                },
+                                }],
                                 allTime:{
                                     time: {hours: 0, min: 0, seconds: 0},
                                     calls:0,
@@ -396,36 +432,78 @@ export default class Voip extends React.Component {
                         var dayToCheck = returnDayStartAndEndForGaps(e.data[a][b]);
                         var millisecondsToCheck = returnMillisecondsOfDate(e.data[a][b]);
                           if(checkNumber) { // Need to get time gaps and check this one.
+                            var indexOfYear = 0;
                             let tempYear = new Date(e.data[a][b]);
                             tempYear = tempYear.getFullYear();
-                            if(tempYear !== year) {
+                            var doesDataHaveYear = doesYearExist(dataToPassBack[indexToUpdate].data, tempYear);
+                            if (doesDataHaveYear) {
+                              indexOfYear = getIndexOfYear(dataToPassBack[indexToUpdate].data, tempYear);
+                            } else {
                               // Here we need to push a new year to our array.
-                              console.log(dataToPassBack[indexToUpdate]);
                               year = tempYear;
+                              dataToPassBack[indexToUpdate].data.push({
+                                year:year,
+                                timeGapsDays: new Array(366),
+                                days: new Array(366),
+                                week: new Array(52),// weekNum:1-52
+                                month: new Array(12),// monthNum: 1-12
+                              });
+                              indexOfYear = dataToPassBack[indexToUpdate].data.length - 1;
+                              tempPoop = true;
                             }
                               // Array of objects {from:, to:} -> dataToPassBack[indexToUpdate].timeGapsDays[dayToCheck]
-                              dataToPassBack = checkAndUpdateDataIfNeed(dataToPassBack, dataToPassBack[indexToUpdate].data.timeGapsDays[dayToCheck],millisecondsToCheck, indexToUpdate,dayToCheck,firstDate,lastDate, e.data[a]);
+                              if(dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[dayToCheck] == undefined) {
+                                if (firstDateDay == lastDateDay) {
+                                    dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[firstDateDay] = [{
+                                        from:returnMillisecondsOfDate(firstDate),
+                                        to:returnMillisecondsOfDate(lastDate),
+                                        new: true,
+                                    }];
+                                } else { // When this runs, multiple days are being added. EDGE CASE.
+                                    dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[firstDateDay] = [{
+                                        from:returnMillisecondsOfDate(firstDate),
+                                        to:0,
+                                        new: true,
+                                    }];
+                                    for(var z = 1; z < (lastDateDay - firstDateDay); z++) {
+                                        dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[firstDateDay + d] = [{
+                                        from:0,
+                                        to:0,
+                                        new: true,
+                                        }];
+                                    }
+                                    dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[lastDateDay] = [{
+                                        from:0,
+                                        to:returnMillisecondsOfDate(lastDate),
+                                        new: true,
+                                    }];
+                                }
+                                exNumbersThatHaveGaps.push(e.data[a][2]);
+                                dataToPassBack = pushDataToArray(dataToPassBack, e.data[a]);
+                              } else {
+                                dataToPassBack = checkAndUpdateDataIfNeed(dataToPassBack, dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[dayToCheck],millisecondsToCheck, indexToUpdate,dayToCheck,firstDate,lastDate, year, e.data[a]);
+                              }
                           } else { // This means that this is a new exNumber being added
                               if (firstDateDay == lastDateDay) {
-                                  dataToPassBack[dataToPassBack.length - 1].data.timeGapsDays[firstDateDay] = [{
+                                  dataToPassBack[dataToPassBack.length - 1].data[0].timeGapsDays[firstDateDay] = [{
                                       from:returnMillisecondsOfDate(firstDate),
                                       to:returnMillisecondsOfDate(lastDate),
                                       new: true,
                                   }];
                               } else { // When this runs, multiple days are being added. EDGE CASE.
-                                  dataToPassBack[dataToPassBack.length - 1].data.timeGapsDays[firstDateDay] = [{
+                                  dataToPassBack[dataToPassBack.length - 1].data[0].timeGapsDays[firstDateDay] = [{
                                       from:returnMillisecondsOfDate(firstDate),
                                       to:0,
                                       new: true,
                                   }];
                                   for(var d = 1; d < (lastDateDay - firstDateDay); d++) {
-                                      dataToPassBack[dataToPassBack.length - 1].data.timeGapsDays[firstDateDay + d] = [{
+                                      dataToPassBack[dataToPassBack.length - 1].data[0].timeGapsDays[firstDateDay + d] = [{
                                       from:0,
                                       to:0,
                                       new: true,
                                       }];
                                   }
-                                  dataToPassBack[dataToPassBack.length - 1].data.timeGapsDays[lastDateDay] = [{
+                                  dataToPassBack[dataToPassBack.length - 1].data[0].timeGapsDays[lastDateDay] = [{
                                       from:0,
                                       to:returnMillisecondsOfDate(lastDate),
                                       new: true,
