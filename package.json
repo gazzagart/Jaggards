@@ -29,7 +29,8 @@
         ]
       },
       "electronPackagerConfig": {
-        "packageManager": "npm"
+        "packageManager": "npm",
+        "icon": "./src/JaggardsIco.ico"
       },
       "electronWinstallerConfig": {
         "name": "Jaggards",

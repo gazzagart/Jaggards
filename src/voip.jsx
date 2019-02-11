@@ -77,10 +77,12 @@ export default class Voip extends React.Component {
         calls: this.state.stateOfVoip[a].allTime.calls,
         hours: this.state.stateOfVoip[a].allTime.time.hours,
         min: min,
-        seconds: seconds
+        seconds: seconds,
+        name: this.state.stateOfVoip[a].name
       });
     }
     this.setState({employeeCards: employeeCardsData});
+    console.log("employeeCardsData",employeeCardsData);
   }
 
    /**
@@ -340,6 +342,7 @@ export default class Voip extends React.Component {
           var lastDate = firstAndLastDate.lastDate;
           var firstDate = firstAndLastDate.firstDate;
           var year = new Date(e.data[1][3]);
+          year = year.getFullYear();
           // These two variables would normally equal, but maybe they dont.
           var lastDateDay = returnDayStartAndEndForGaps(lastDate);
           var firstDateDay = returnDayStartAndEndForGaps(firstDate);
@@ -396,6 +399,8 @@ export default class Voip extends React.Component {
                             let tempYear = new Date(e.data[a][b]);
                             tempYear = tempYear.getFullYear();
                             if(tempYear !== year) {
+                              // Here we need to push a new year to our array.
+                              console.log(dataToPassBack[indexToUpdate]);
                               year = tempYear;
                             }
                               // Array of objects {from:, to:} -> dataToPassBack[indexToUpdate].timeGapsDays[dayToCheck]
@@ -438,14 +443,15 @@ export default class Voip extends React.Component {
           } else {
             var length = lastDateDay - firstDateDay;
             for (var e = 0; e <= length; e++) {
-              changeTimgapsNew(dataToPassBack, (firstDateDay + a));
+              console.log("First day: ", firstDateDay);
+              changeTimgapsNew(dataToPassBack, (firstDateDay + e));
             }
           }
           return dataToPassBack;
         }
         /*END OF FUNCTIONS*/
         /* TODO: We need to add time to each person for each day, week and month.
-         * 
+         * ISSUE: If two years are added it effs up.
         */
         var worker = new Worker(app.getAppPath() + "\\src\\worker.js");
         worker.addEventListener('message',  (e) => {

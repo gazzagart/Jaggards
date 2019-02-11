@@ -6,6 +6,8 @@ import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
+import { Link } from 'react-router-dom';
+
 
 const styles = theme => ({
   card: {
@@ -45,7 +47,9 @@ class EmployeeCard extends React.Component {
             </Typography>
           </CardContent>
           <CardActions>
-            <Button size="small">Learn More</Button>
+            <Button size="small" className="w3-teal">
+              <Link style={{ textDecoration: 'none' }} to='/employeePage/'>Learn More</Link>
+            </Button>
           </CardActions>
         </Card>
       );
