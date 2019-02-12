@@ -30,6 +30,10 @@ class EmployeeCard extends React.Component {
         };
       }
 
+      setLocalStorage(exNumber) {
+        localStorage.setItem("exNumberToView", exNumber);
+      }
+
   render () {
     const { classes } = this.props;
     return (
@@ -47,7 +51,7 @@ class EmployeeCard extends React.Component {
             </Typography>
           </CardContent>
           <CardActions>
-            <Button size="small" className="w3-teal">
+            <Button size="small" className="w3-teal" onClick={() => {this.setLocalStorage(this.props.exNumber)}}>
               <Link style={{ textDecoration: 'none' }} to='/employeePage/'>Learn More</Link>
             </Button>
           </CardActions>

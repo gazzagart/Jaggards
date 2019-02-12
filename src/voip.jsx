@@ -6,12 +6,10 @@ import AlertDialog from './alertdialog.jsx';
 import CustomizedSnackbars from './customizedsnackbars.jsx';
 import EmployeeCard from './employeecard.jsx';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from 'constants';
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
 const dialog = remote.dialog; // Load the dialogs component of the OS
 const fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
-var tempPoop = false;
 
 export default class Voip extends React.Component {
 
@@ -161,6 +159,14 @@ export default class Voip extends React.Component {
           return day;
         }
         /**
+           * Function to return week of the year a given date.
+           * @param {Date} date - The date to work out the week of the year.
+           */
+          function getWeek (date) {
+            let day = returnDayStartAndEndForGaps(date);
+            return (Math.floor(day/7) + 1); // Will have 56 weeks after the 364th day.
+          }
+        /**
          * Function to return the amount of milliseconds since 1970. Returns a number.
          * @param {string} date - Date you want the milliseconds of.
          */
@@ -250,6 +256,13 @@ export default class Voip extends React.Component {
          * @param {Object} data - The row of the data from our file.
          */
         function pushDataToArray (dataArray, data) {
+          // The date of the call
+          var dateOfCall = new Date(data[3]);
+          var yearOfCall = dateOfCall.getFullYear();
+          var monthOfCall = dateOfCall.getMonth();
+          var weekOfCall = getWeek(dateOfCall);
+          var dayOfCall = returnDayStartAndEndForGaps(dateOfCall);
+
           // Here we need to check that the call was over 20 seconds.
           var time = new Date("2018/12/15 " + data[4]);
           var seconds = time.getSeconds();
@@ -258,8 +271,9 @@ export default class Voip extends React.Component {
             var hours = time.getHours();
             var length = dataArray.length;
             for (var a = 0; a < length; a++) {
-              if(dataArray[a].exNumber == data[2]) {
+              if(dataArray[a].exNumber == data[2]) { // Checking for correct exnumber
                 // here we need to update our data.
+                //Start of all time
                 dataArray[a].allTime.time.hours = dataArray[a].allTime.time.hours + hours;
                 dataArray[a].allTime.time.min = dataArray[a].allTime.time.min + min;
                 if(dataArray[a].allTime.time.min > 60) {
@@ -276,6 +290,101 @@ export default class Voip extends React.Component {
                   }
                 }
                 dataArray[a].allTime.calls++;
+                // End of all time.
+                var indexOfYearNeeded = getIndexOfYear(dataArray[a].data,yearOfCall);
+
+                // Start of add to day
+                if (dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1] == null) { // Nothing has been added to this day yet
+                  dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1] = {
+                    time:{hours:hours,min:min,seconds:seconds},
+                    calls:1,
+                    outgoingNum:0,
+                    incomingNum:0,
+                    unknownNum:0
+                  };
+                } else {
+                  // Hours and min
+                  dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.hours = dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.hours + hours;
+                  dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min = dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min + min;
+                  if(dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min > 60) {
+                      dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min = dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min - 60;
+                      dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.hours++
+                    }
+                  }
+                  // Seconds
+                  dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds = dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds + seconds;
+                  if (dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds > 60) {
+                      dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds = dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.seconds - 60;
+                      dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].time.min++;
+                    }
+                  }
+                  dataArray[a].data[indexOfYearNeeded].days[dayOfCall - 1].calls++;
+                }
+                // End of add to day
+
+                // Start of week
+                if (dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1] == null) { // Nothing has been added to this week yet
+                  dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1] = {
+                    time:{hours:hours,min:min,seconds:seconds},
+                    calls:1,
+                    outgoingNum:0,
+                    incomingNum:0,
+                    unknownNum:0
+                  };
+                } else {
+                  // Hours and min
+                  dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.hours = dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.hours + hours;
+                  dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min = dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min + min;
+                  if(dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min > 60) {
+                      dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min = dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min - 60;
+                      dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.hours++
+                    }
+                  }
+                  // Seconds
+                  dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds = dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds + seconds;
+                  if (dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds > 60) {
+                      dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds = dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.seconds - 60;
+                      dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].time.min++;
+                    }
+                  }
+                  dataArray[a].data[indexOfYearNeeded].week[weekOfCall - 1].calls++;
+                }
+                // End of week
+                // Start of month
+                // DON'T NEED monthOfCall - 1 BECAUSE FUNCTION RETURNS 0 - 11
+                if (dataArray[a].data[indexOfYearNeeded].month[monthOfCall] == null) { // Nothing has been added to this month yet
+                  dataArray[a].data[indexOfYearNeeded].month[monthOfCall] = {
+                    time:{hours:hours,min:min,seconds:seconds},
+                    calls:1,
+                    outgoingNum:0,
+                    incomingNum:0,
+                    unknownNum:0
+                  };
+                } else {
+                  // Hours and min
+                  dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.hours = dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.hours + hours;
+                  dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min = dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min + min;
+                  if(dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min > 60) {
+                      dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min = dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min - 60;
+                      dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.hours++
+                    }
+                  }
+                  // Seconds
+                  dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds = dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds + seconds;
+                  if (dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds > 60) {
+                    while (dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds > 60) {
+                      dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds = dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.seconds - 60;
+                      dataArray[a].data[indexOfYearNeeded].month[monthOfCall].time.min++;
+                    }
+                  }
+                  dataArray[a].data[indexOfYearNeeded].month[monthOfCall].calls++;
+                }
+                // End of month
                 return dataArray;
               }
             }
@@ -319,8 +428,6 @@ export default class Voip extends React.Component {
          */
         function changeTimgapsNew (allData, day, year) {
           var length = allData.length;
-          console.log(year);
-          console.log(day);
           for (var a = 0; a < length; a++) {
             var numYears = allData[a].data.length;
             for (var b = 0; b < numYears; b++) {
@@ -411,7 +518,7 @@ export default class Voip extends React.Component {
                                   year:year,
                                   timeGapsDays: new Array(366),
                                   days: new Array(366),
-                                  week: new Array(52),// weekNum:1-52
+                                  week: new Array(53),// weekNum:1-53
                                   month: new Array(12),// monthNum: 1-12
                                 }],
                                 allTime:{
@@ -445,7 +552,7 @@ export default class Voip extends React.Component {
                                 year:year,
                                 timeGapsDays: new Array(366),
                                 days: new Array(366),
-                                week: new Array(52),// weekNum:1-52
+                                week: new Array(53),// weekNum:1-53
                                 month: new Array(12),// monthNum: 1-12
                               });
                               indexOfYear = dataToPassBack[indexToUpdate].data.length - 1;
