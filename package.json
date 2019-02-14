@@ -1,7 +1,7 @@
 {
   "name": "jaggards",
   "productName": "Jaggards",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "description": "The Jaggards Desktop app to handle .csv and Excel data",
   "main": "src/index.js",
   "scripts": {
@@ -60,6 +60,7 @@
     "electron-compile": "6.4.3",
     "electron-devtools-installer": "2.2.4",
     "electron-squirrel-startup": "1.0.0",
+    "exceljs": "^1.7.0",
     "hoek": "^6.1.2",
     "mime": "^2.4.0",
     "papaparse": "^4.6.2",
