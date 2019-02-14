@@ -42,6 +42,9 @@ class EmployeeCard extends React.Component {
             <Typography className={classes.title} color="textSecondary" gutterBottom>
               Extension Number: {this.props.exNumber}
             </Typography>
+            <Typography className={classes.title} color="textSecondary" gutterBottom>
+              Employee Name: {this.props.name}
+            </Typography>
             <Typography variant="h5" component="h2">
               Number of Calls: {this.props.calls}
             </Typography>

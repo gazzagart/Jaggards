@@ -82,7 +82,6 @@ export default class Voip extends React.Component {
       });
     }
     this.setState({employeeCards: employeeCardsData});
-    console.log("employeeCardsData",employeeCardsData);
   }
 
    /**
@@ -628,7 +627,6 @@ export default class Voip extends React.Component {
           } else {
             var length = lastDateDay - firstDateDay;
             for (var e = 0; e <= length; e++) {
-              console.log("First day: ", firstDateDay);
               changeTimgapsNew(dataToPassBack, (firstDateDay + e));
             }
           }
@@ -644,11 +642,8 @@ export default class Voip extends React.Component {
           // console.log(e.data);
           worker.terminate();
           var dataForFile =  toPost(e, this.state.stateOfVoip);
-          console.log("this.state.stateOfVoip",this.state.stateOfVoip);
           this.getEmployeeCards();
-          console.log("dataForFile",dataForFile);
           saveToFile(dataForFile).then((e) => {
-              console.log(e);
               this.openSnackBarSuccesLoadingNewFile();
               this.setState({loading: false});
             }).catch((err) => {
@@ -678,6 +673,7 @@ export default class Voip extends React.Component {
     });
   }
 
+
   render() {
     const openDialog = this.state.dialogOpen;
     const titleDialog = this.state.dialogTitle;
@@ -695,8 +691,10 @@ export default class Voip extends React.Component {
       loadingLoader.display = "block";
       loadingRest.display = "none";
     }
-    const employeeCards = this.state.employeeCards.map((result) => {
-      return <Grid item key={result.key}><EmployeeCard time={result.hours + ":" + result.min + ":" + result.seconds} calls={result.calls} exNumber={result.exNumber}/></Grid>
+    var employeeCards = this.state.employeeCards.sort(function(a, b) {
+      return (a.exNumber - b.exNumber);
+  }).map((result) => {
+      return <Grid item key={result.key}><EmployeeCard time={result.hours + ":" + result.min + ":" + result.seconds} calls={result.calls} exNumber={result.exNumber} name={result.name}/></Grid>
     });
     return (
     <div style={{ marginTop: 30}}>

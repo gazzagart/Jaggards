@@ -3,6 +3,13 @@ import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
 import YearCardData from './yearcarddata';
+import CustomizedSnackbars from './customizedsnackbars.jsx';
+import TextField from '@material-ui/core/TextField';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 const remote = require('electron').remote;// Load remote compnent that contains the dialog dependency
 const app = remote.app;
@@ -11,38 +18,29 @@ const fs = require('fs'); // Load the File System to execute our common tasks (C
 /** In this element we need to be able to display the voip data in a clean way.
  *  TODO: data for today, week month year all time
  */
-
 export default class EmployeePage extends React.Component {
 
   constructor(props) {
     super(props);
-    this.getYearCardData = this.getYearCardData.bind(this);
     this.state = {
-      YearCardData: [],
+      yearCardData: [],
+      employeeData: {},
       employeeName: "No Name",
       employeeNumber: 0,
       yearCards: [],
-      callsToday: {
-        hours:0,
-        min:0,
-        seconds:0
-      },
-      callsWeek: {
-        hours:0,
-        min:0,
-        seconds:0
-      },
-      callsMonth: {
-        hours:0,
-        min:0,
-        seconds:0
-      },
-      callsYear: {
-        hours:0,
-        min:0,
-        seconds:0
-      }
+      openSnack: false,
+      typeSnack: 'info',
+      messageSnack: 'Well hello there',
+      openDialog: false,
+      name: ""
     };
+    this.state.yearCardData = [];
+    this.getYearCardData = this.getYearCardData.bind(this);
+    this.myCallback = this.myCallback.bind(this);
+    this.firstLoad = this.firstLoad.bind(this);
+    this.handleClose = this.handleClose.bind(this);
+    this.handleCancel = this.handleCancel.bind(this);
+    this.handleAuthorChange = this.handleAuthorChange.bind(this);
   }
 
   componentDidMount() {
@@ -52,11 +50,38 @@ export default class EmployeePage extends React.Component {
       if(err) {
         console.error("There was an error reading: ", filePath, " file.");
       }
-      this.setDataForEmployee(JSON.parse(data));
+      this.setState({employeeData: JSON.parse(data)})
+      this.setState({employeeName: this.state.employeeData.name});
+      this.getYearCardData();
     });
   }
 
-  setDataForEmployee (dataOfEmployee) {
+  /**
+   * Function Update Name of employee.
+   * @param {Array} dataToSave - this is an array of all the data to write to files
+   */
+  saveToFile () {
+    var nameOfFile =  app.getAppPath() + "\\dataForVoip\\" + localStorage.getItem("exNumberToView") + ".json";
+    var dataToSave = this.state.employeeData;
+    console.log(dataToSave);
+    dataToSave.name = this.state.name;
+    this.setState({employeeData: dataToSave});
+    fs.writeFile(nameOfFile, JSON.stringify(dataToSave), (err) => {
+      if(err){
+        return(alert("An error ocurred creating the file "+ err.message));
+      }
+      this.openSnackBarSucces();
+    });
+  }
+
+  firstLoad (dataFromChild) {
+    this.setState({
+      dialogOpen: dataFromChild
+    });
+  }
+
+  getYearCardData () {
+    var dataOfEmployee = this.state.employeeData;
     var date = new Date();
     const oneDay = 1000 * 60 * 60 * 24;
     var now = new Date(date);
@@ -64,86 +89,113 @@ export default class EmployeePage extends React.Component {
     var diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
     var today = Math.floor(diff / oneDay);
     var thisWeek =  (Math.floor(today/7) + 1); // Will have 56 weeks after the 364th day.
-    var secondsOnPhoneDays = 0;
-    var secondsOnPhoneWeeks = 0;
-    var secondsOnPhoneMonths = 0;
+    var secondsOnPhone = 0;
+    var callsThisYear = 0;
+    var timeOnPhoneToday = 0;
+    var timeOnPhoneWeek = 0;
+    var timeOnPhoneMonth = 0;
     var noOfDays = 0;
     var noOfWeeks = 0;
     var noOfMonths = 0;
-    console.log(dataOfEmployee);
+    var YearCardDataData = [];
     var years = dataOfEmployee.data.length;
     for (var a = 0; a < years; a++) {
       var length = 0;
       for(length = 0; length < 366; length++){
         if(dataOfEmployee.data[a].days[length] != null) {
-          secondsOnPhoneDays += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
-          secondsOnPhoneDays += dataOfEmployee.data[a].days[length].time.min * 60;
-          secondsOnPhoneDays += dataOfEmployee.data[a].days[length].time.seconds;
+          secondsOnPhone += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
+          secondsOnPhone += dataOfEmployee.data[a].days[length].time.min * 60;
+          secondsOnPhone += dataOfEmployee.data[a].days[length].time.seconds;
           noOfDays++;
+          if((length + 1) == today) {
+            timeOnPhoneToday += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
+            timeOnPhoneToday += dataOfEmployee.data[a].days[length].time.min * 60;
+            timeOnPhoneToday += dataOfEmployee.data[a].days[length].time.seconds;
+          }
         }
       }
       for(length = 0; length < 53; length++) {
         if(dataOfEmployee.data[a].week[length] != null) {
-          secondsOnPhoneWeeks += dataOfEmployee.data[a].week[length].time.hours * 60 * 60;
-          secondsOnPhoneWeeks += dataOfEmployee.data[a].week[length].time.min * 60;
-          secondsOnPhoneWeeks += dataOfEmployee.data[a].week[length].time.seconds;
           noOfWeeks++;
+          if((length + 1) == thisWeek) {
+            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
+            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.min * 60;
+            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.seconds;
+          }
         }
       }
       for(length = 0; length < 12; length++) {
         if(dataOfEmployee.data[a].month[length] != null) {
-          secondsOnPhoneMonths += dataOfEmployee.data[a].month[length].time.hours * 60 * 60;
-          secondsOnPhoneMonths += dataOfEmployee.data[a].month[length].time.min * 60;
-          secondsOnPhoneMonths += dataOfEmployee.data[a].month[length].time.seconds;
+          callsThisYear += dataOfEmployee.data[a].month[length].calls;
           noOfMonths++;
+          if(length == date.getMonth()) {
+            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
+            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.min * 60;
+            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.seconds;
+          }
         }
       }
-      // TODO: Finish this
+      var todaysCalls = dataOfEmployee.data[a].days[today]
+      var thisWeeksCalls = dataOfEmployee.data[a].week[thisWeek];
+      var thisMonthsCalls =  dataOfEmployee.data[a].month[date.getMonth()];
+      if (todaysCalls != null) todaysCalls = dataOfEmployee.data[a].days[today].calls;
+      else todaysCalls = 0;
+      if (thisWeeksCalls != null) thisWeeksCalls = dataOfEmployee.data[a].week[thisWeek].calls;
+      else thisWeeksCalls = 0;
+      if (thisMonthsCalls != null) thisMonthsCalls = dataOfEmployee.data[a].month[date.getMonth()].calls;
+      else thisMonthsCalls = 0;
       YearCardDataData.push({
         key: a,
         year: dataOfEmployee.data[a].year,
-        callsDay: dataOfEmployee.data[a].days[today].calls,
-        timeDay: this.state.stateOfVoip[a].exNumber,
-        averageChangeWeek: this.state.stateOfVoip[a].allTime.calls,
-        callsMonth: dataOfEmployee.data[a].week[thisWeek].calls,
-        timeMonth: min,
-        averageChangeYear: seconds,
-        callsYear: this.state.stateOfVoip[a].name,
-        timeYear: ""
+        averageChangeDay: secondsOnPhone/noOfDays,
+        callsDay: todaysCalls,
+        timeDay: timeOnPhoneToday,
+        averageChangeWeek: secondsOnPhone/noOfWeeks,
+        callsWeek: thisWeeksCalls,
+        timeWeek: timeOnPhoneWeek,
+        averageChangeMonth: secondsOnPhone/noOfMonths,
+        callsMonth: thisMonthsCalls,
+        timeMonth: timeOnPhoneMonth,
+        averageChangeYear: secondsOnPhone/years,
+        callsYear: callsThisYear,
+        timeYear: secondsOnPhone
       });
     }
-    this.setState({YearCardData: YearCardDataData});
-    console.log(secondsOnPhoneDays);
-    console.log(noOfDays);
-    console.log(secondsOnPhoneWeeks);
-    console.log(noOfWeeks);
-    console.log(secondsOnPhoneMonths);
-    console.log(noOfMonths);
+    this.setState({yearCardData: YearCardDataData});
   }
 
-  getYearCardData () {
-    var YearCardDataData = [];
-    var length = this.state.stateOfVoip.length;
-    var min = "", seconds = "";
-    for (var a = 0; a < length; a++) {
-      if(this.state.stateOfVoip[a].allTime.time.min < 10) {min = "0" + this.state.stateOfVoip[a].allTime.time.min;}
-      else {min = this.state.stateOfVoip[a].allTime.time.min;}
-      if(this.state.stateOfVoip[a].allTime.time.seconds < 10) {seconds = "0" + this.state.stateOfVoip[a].allTime.time.seconds;}
-      else {seconds = this.state.stateOfVoip[a].allTime.time.seconds;}
-      YearCardDataData.push({
-        key: a,
-        callsDay: this.state.stateOfVoip[a].new,
-        timeDay: this.state.stateOfVoip[a].exNumber,
-        averageChangeWeek: this.state.stateOfVoip[a].allTime.calls,
-        callsMonth: this.state.stateOfVoip[a].allTime.time.hours,
-        timeMonth: min,
-        averageChangeYear: seconds,
-        callsYear: this.state.stateOfVoip[a].name,
-        timeYear: ""
-      });
-    }
-    this.setState({YearCardData: YearCardDataData});
-    console.log("YearCardDataData",YearCardDataData);
+  openSnackBarSucces() {
+    this.setState({
+      openSnack: true,
+      typeSnack: 'success',
+      messageSnack: 'Succesfully updated name',
+    });
+  }
+
+  myCallback (dataFromChild) {
+    this.setState({
+      openSnack: dataFromChild
+    });
+  }
+
+  handleClickOpen () {
+    this.setState({ openDialog: true });
+  }
+
+  handleClose() {
+    this.setState({ openDialog: false });
+    this.setState({ employeeName: this.state.name });
+    console.log(this.state.name);
+    this.saveToFile();
+  }
+
+  handleCancel() {
+    this.setState({ openDialog: false });
+  }
+
+  handleAuthorChange (event) {
+    let value = event.target;
+    this.setState({ name: value.value });
   }
 
 
@@ -154,65 +206,80 @@ export default class EmployeePage extends React.Component {
    */
 
   render() {
-    // const YearCardData = this.state.YearCardData.map((result) => {
-    //   return <Grid item key={result.key}>
-    //   <YearCardData averageChangeDay="poop"
-    //           callsDay="poop"
-    //           timeDay="poop"
-    //           averageChangeWeek="poop"
-    //           callsWeek="poop"
-    //           timeWeek="poop"
-    //           averageChangeMonth="poop"
-    //           callsMonth="poop"
-    //           timeMonth="poop"
-    //           averageChangeYear="poop"
-    //           callsYear="poop"
-    //           timeYear="poop"/>
-    //   </Grid>
-    // });
+    var yearCardData;
+    if (this.state.yearCardData != undefined) {
+      yearCardData = this.state.yearCardData.map((result) => {return <Grid item key={result.key}><YearCardData year = {result.year} averageChangeDay = {result.averageChangeDay} callsDay = {result.callsDay} timeDay = {result.timeDay} averageChangeWeek = {result.averageChangeWeek} callsWeek = {result.callsWeek} timeWeek = {result.timeWeek} averageChangeMonth = {result.averageChangeMonth} callsMonth = {result.callsMonth} timeMonth = {result.timeMonth} averageChangeYear = {result.averageChangeYear} callsYear = {result.callsYear} timeYear = {result.timeYear}/></Grid>});
+    }
+    const openSnack = this.state.openSnack;
+    const typeSnack = this.state.typeSnack;
+    const messageSnack = this.state.messageSnack;
+    var employeeName = this.state.employeeName;
+    if (employeeName == "") {
+      employeeName = "No Name";
+    }
     return (
       // <EmployeeCard time={result.hours + ":" + result.min + ":" + result.seconds} calls={result.calls} exNumber={result.exNumber}/>
     <div style={{ marginTop: 30 }}>
       <Grid container spacing={16}>
         <Grid item xs={12}>
-            <Grid container justify="center" spacing={16}>
-              <Grid item>
-                <h2>Employee: {this.state.employeeName}</h2>
-              </Grid>
+          <Grid container justify="center" spacing={16}>
               <Grid item>
                 <h2>Ex Number: {this.state.employeeNumber}</h2>
               </Grid>
             </Grid>
             <Grid container justify="center" spacing={16}>
+              <Grid item>
+                <h2>Employee: {employeeName}</h2>
+              </Grid>
+              <Grid item>
+                <p><Button variant="contained" color="primary" onClick={() => {this.setState({ openDialog: true });}}>change</Button></p>
+              </Grid>
+            </Grid>
+            <Grid container justify="center" spacing={16}>
                 <Grid item>
-                  <Button variant="contained" color="primary">
+                  <Button variant="contained" color="primary" className="w3-green">
                     <Link style={{ textDecoration: 'none' }} to='/voip/'>Back</Link>
                   </Button>
                 </Grid>
             </Grid>
 
-            {/* <Grid container justify="center" spacing={16}>
-          <Grid item>{YearCardData}</Grid>
-        </Grid> */}
-
             <Grid container justify="center" spacing={16}>
-              <Grid item>
-              <YearCardData averageChangeDay="poop"
-              callsDay="poop"
-              timeDay="poop"
-              averageChangeWeek="poop"
-              callsWeek="poop"
-              timeWeek="poop"
-              averageChangeMonth="poop"
-              callsMonth="poop"
-              timeMonth="poop"
-              averageChangeYear="poop"
-              callsYear="poop"
-              timeYear="poop"/>
-              </Grid>
+              <Grid item>{yearCardData}</Grid>
             </Grid>
+
         </Grid>
       </Grid>
+
+      <Dialog
+          open={this.state.openDialog}
+          onClose={this.handleClose}
+          aria-labelledby="form-dialog-title"
+        >
+          <DialogTitle id="form-dialog-title">Update Name</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              To change the name, please enter the name here.
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Name of employee"
+              type="text"
+              fullWidth
+              onChange={this.handleAuthorChange}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleCancel} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={this.handleClose} color="primary">
+              Subscribe
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+      <CustomizedSnackbars type={typeSnack} message={messageSnack} open={openSnack} callbackFromParent={this.myCallback}/>
     </div>
     );
   }

@@ -53,11 +53,11 @@ export default class Start extends React.Component {
                   <Link style={{ textDecoration: 'none' }} to="/excelMonthEnd/">Excel Spreadsheet</Link>
                 </Button>
                 </Grid>
-                <Grid item>
+                {/* <Grid item>
                 <Button variant="contained" className="w3-green" onClick={() => this.openSnackBar()}>
                   Snackbar
                 </Button>
-                </Grid>
+                </Grid> */}
             </Grid>
           </Grid>
         </Grid>
