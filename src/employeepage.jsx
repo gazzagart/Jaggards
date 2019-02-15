@@ -118,9 +118,9 @@ export default class EmployeePage extends React.Component {
         if(dataOfEmployee.data[a].week[length] != null) {
           noOfWeeks++;
           if((length + 1) == thisWeek) {
-            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
-            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.min * 60;
-            timeOnPhoneWeek += dataOfEmployee.data[a].days[length].time.seconds;
+            timeOnPhoneWeek += dataOfEmployee.data[a].week[length].time.hours * 60 * 60;
+            timeOnPhoneWeek += dataOfEmployee.data[a].week[length].time.min * 60;
+            timeOnPhoneWeek += dataOfEmployee.data[a].week[length].time.seconds;
           }
         }
       }
@@ -129,9 +129,9 @@ export default class EmployeePage extends React.Component {
           callsThisYear += dataOfEmployee.data[a].month[length].calls;
           noOfMonths++;
           if(length == date.getMonth()) {
-            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.hours * 60 * 60;
-            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.min * 60;
-            timeOnPhoneMonth += dataOfEmployee.data[a].days[length].time.seconds;
+            timeOnPhoneMonth += dataOfEmployee.data[a].month[length].time.hours * 60 * 60;
+            timeOnPhoneMonth += dataOfEmployee.data[a].month[length].time.min * 60;
+            timeOnPhoneMonth += dataOfEmployee.data[a].month[length].time.seconds;
           }
         }
       }

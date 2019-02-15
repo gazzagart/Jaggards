@@ -64,7 +64,8 @@ class YearCardData extends React.Component {
               hours:0,
               min:0,
               seconds:0
-            }
+            },
+            isThisYear: false
         };
     }
 
@@ -252,6 +253,11 @@ class YearCardData extends React.Component {
       averageCallsYear.seconds = averageTimeYearTemp;
       this.setState({averageCallsYear: averageCallsYear});
       //End of this average calls Year calculation.
+      let tempDate = new Date();
+      tempDate.getFullYear();
+      if(this.props.year == tempDate.getFullYear()) {
+        this.setState({isThisYear: true});
+      }
     }
 
   render () {
@@ -259,6 +265,12 @@ class YearCardData extends React.Component {
     var actualPassDay, actualPassWeek, actualPassMonth;
     var callsDayPass = this.state.callsDay;
     actualPassDay = callsDayPass;
+    let loadRest = {
+      display: 'none'
+    };
+    if (this.state.isThisYear) {
+      loadRest.display = "block";
+    }
     if(callsDayPass == undefined) {
       callsDayPass = {hours:0,min:0,seconds:0};
       actualPassDay = {hours:0,min:0,seconds:0};
@@ -358,6 +370,13 @@ class YearCardData extends React.Component {
     <div>
         <Card  style={{minWidth:450, maxWidth:720, marginBottom:16}}>
           <CardContent>
+          <CardContent>
+            <Typography variant="h5" component="h2" className="w3-center">
+                Year: {this.props.year}
+            </Typography>
+            <br></br>
+          </CardContent>
+          <div style={loadRest}>
             <Typography variant="h5" component="h2">
                 Today
             </Typography>
@@ -372,12 +391,12 @@ class YearCardData extends React.Component {
             <Typography variant="h5" component="h2">
               Time calling: {actualPassDay.hours + ":" + actualPassDay.min + ":" + actualPassDay.seconds}
             </Typography>
+            </div>
           </CardContent>
-          <CardActions>
-          </CardActions>
         </Card>
 
         <Card  style={{minWidth:450, maxWidth:720, marginBottom:16}}>
+          <div style={loadRest}>
             <CardContent>
                 <Typography variant="h5" component="h2">
                     This Week
@@ -394,11 +413,11 @@ class YearCardData extends React.Component {
                     Time calling: {actualPassWeek.hours + ":" + actualPassWeek.min + ":" + actualPassWeek.seconds}
                 </Typography>
             </CardContent>
-            <CardActions>
-            </CardActions>
+          </div>
         </Card>
 
         <Card  style={{minWidth:450, maxWidth:720, marginBottom:16}}>
+        <div style={loadRest}>
           <CardContent>
             <Typography variant="h5" component="h2">
                 This Month
@@ -414,8 +433,7 @@ class YearCardData extends React.Component {
               Time calling: {actualPassMonth.hours + ":" + actualPassMonth.min + ":" + actualPassMonth.seconds}
             </Typography>
           </CardContent>
-          <CardActions>
-          </CardActions>
+        </div>
         </Card>
 
 

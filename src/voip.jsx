@@ -211,7 +211,8 @@ export default class Voip extends React.Component {
                 return dataToPassBack;
               }
             }
-            dataToPassBack[indexToChange].data[year].timeGapsDays[dayForGap].push({
+            var indexOfYear = getIndexOfYear(dataToPassBack[indexToChange].data,year);
+            dataToPassBack[indexToChange].data[indexOfYear].timeGapsDays[dayForGap].push({
                 from:returnMillisecondsOfDate(fromDateToAdd),
                 to:returnMillisecondsOfDate(toDateToAdd),
                 new: true,
@@ -441,13 +442,13 @@ export default class Voip extends React.Component {
 
         /**
          * Function to return the index of the year for the data.
-         * @param {Array} allData - The data.
+         * @param {Array} dataOfEmployee - The data array of JUST the data part that holds each year data.
          * @param {Number} year - the year that we want look for.
          */
-        function getIndexOfYear (allData, year) {
-          var length =  allData.length;
+        function getIndexOfYear (dataOfEmployee, year) {
+          var length =  dataOfEmployee.length;
           for (var a = 0; a < length; a++) {
-            if (allData[a].year == year) {
+            if (dataOfEmployee[a].year == year) {
               return a;
             }
           }
@@ -555,7 +556,6 @@ export default class Voip extends React.Component {
                                 month: new Array(12),// monthNum: 1-12
                               });
                               indexOfYear = dataToPassBack[indexToUpdate].data.length - 1;
-                              tempPoop = true;
                             }
                               // Array of objects {from:, to:} -> dataToPassBack[indexToUpdate].timeGapsDays[dayToCheck]
                               if(dataToPassBack[indexToUpdate].data[indexOfYear].timeGapsDays[dayToCheck] == undefined) {

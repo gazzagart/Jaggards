@@ -1,7 +1,7 @@
 {
   "name": "jaggards",
   "productName": "Jaggards",
-  "version": "0.5.0",
+  "version": "0.5.5",
   "description": "The Jaggards Desktop app to handle .csv and Excel data",
   "main": "src/index.js",
   "scripts": {
