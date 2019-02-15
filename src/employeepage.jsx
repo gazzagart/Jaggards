@@ -274,7 +274,7 @@ export default class EmployeePage extends React.Component {
               Cancel
             </Button>
             <Button onClick={this.handleClose} color="primary">
-              Subscribe
+              Update
             </Button>
           </DialogActions>
         </Dialog>
